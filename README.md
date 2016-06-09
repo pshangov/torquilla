@@ -25,6 +25,10 @@ Database schema changes are versioned using git. A database version is just a gi
 
 A migration script changes the state of the schema or data. Examples of migrations scripts are adding a column or table, or moving or changing data. A definition script describes a logical entity, e.g. a stored procedure or a view. Definition scripts are idempotent, i.e. they can be safely run multiple times and will always produce the same results. Migration scripts **update** existing entities, where as defnition scripts **replace** existing entities.
 
+### Manifest
+
+SQL should be listed and ordered in a manifest file, and will be output according to their order there.
+
 ### Rollbacks
 
 Torquilla currently does not support rollbacks. A rollback should be manually implemented as a forward migration reverting the problematic changes.
