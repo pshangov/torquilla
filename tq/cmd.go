@@ -11,7 +11,13 @@ import (
 	"os"
 	"sort"
 	"strings"
+    "text/template"
 )
+
+type TemplateData struct {
+	Script string
+	Sha string
+}
 
 var RootCmd = &cobra.Command{
 	Use:   "tq start_commit [end_commit]",
@@ -115,7 +121,20 @@ func run(args []string) error {
 
 	output := concatenateScripts(scripts, endSha)
 
-	fmt.Println(output)
+	if viper.GetString("template") != "" {
+        tmpl, err := template.New("migration").Parse(viper.GetString("template"))
+        if err != nil {
+            return err
+        }
+
+        err = tmpl.Execute(os.Stdout, TemplateData{output, endSha})
+        if err != nil {
+            return err
+        }
+	} else {
+        fmt.Println(output)
+    }
+
 
 	return nil
 }
@@ -224,14 +243,6 @@ func concatenateScripts(scripts []Script, sha string) string {
 	for _, script := range scripts {
 		header := fmt.Sprintf("-- %s:%s", sha, script.Name)
 		entries = append(entries, header, script.Data)
-	}
-
-	if viper.GetString("version_tmpl") != "" {
-		entries = append(
-			entries,
-			"-- update version number",
-			fmt.Sprintf(viper.GetString("version_tmpl"), sha),
-		)
 	}
 
 	output := strings.Join(entries, "\n\n")
