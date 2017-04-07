@@ -41,14 +41,17 @@ The root of the database repo should contain a `torquilla.[toml|json|yaml]` conf
 * `migrations` list of paths where migration scripts are located
 * `definitions` list of paths where definition scripts are located
 * `extensions` if provided, only files with the specified extensions will be included
-* `version_tmpl` sql query template to record current database version
+* `template` template for output, variables available are `Script` and `Sha`
 
 Example:
 
     migrations   = [ "migrations" ]
     definitions  = [ "procedures" ]
     extensions   = [ ".sql" ]
-    version_tmpl = "INSERT INTO version_history (version_sha) VALUES (%s)"
+    template    = """
+      {{.Script}}
+      -- Insert new version number
+      INSERT INTO version_history (version_sha) VALUES ('{{.Sha}}');"""
 
 File selection and ordering
 ---------------------------
