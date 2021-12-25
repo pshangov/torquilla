@@ -1,0 +1,10 @@
+version: '3'
+
+tasks:
+
+  build:
+    - export GOOS=windows GOARCH=386 && go build -v -o ./.build/tq-$GOOS-$GOARCH.exe
+    - export GOOS=windows GOARCH=amd64 && go build -v -o ./.build/tq-$GOOS-$GOARCH.exe
+    - export GOOS=linux GOARCH=386 && go build -v -o ./.build/tq-$GOOS-$GOARCH
+    - export GOOS=linux GOARCH=amd64 && go build -v -o ./.build/tq-$GOOS-$GOARCH
+    - export GOOS=darwin GOARCH=amd64 && go build -v -o ./.build/tq-$GOOS-$GOARCH

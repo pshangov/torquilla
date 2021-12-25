@@ -2,14 +2,14 @@ package tq
 
 import (
 	"fmt"
-	"github.com/gogits/git-module"
+	"github.com/gogs/git-module"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
 func OpenRepository(dir string) (Repository, error) {
-	repo, err := git.OpenRepository(dir)
+	repo, err := git.Open(dir)
 	if err != nil {
 		return Repository{}, fmt.Errorf("Failed to open repository at \"%s\": %s", dir, err)
 	}
@@ -23,25 +23,25 @@ type Repository struct {
 
 func (repo Repository) Disambiguate(ref string) (string, error) {
 	command := git.NewCommand("rev-parse", fmt.Sprintf("--disambiguate=%s", ref))
-	result, err := command.RunInDir(repo.Path)
+	result, err := command.RunInDir(repo.Path())
 	if err != nil {
 		return "", fmt.Errorf("Could not find SHA \"%s\" in repository", ref)
 	}
-	return strings.TrimSpace(result), nil
+	return strings.TrimSpace(string(result)), nil
 }
 
 func (repo Repository) GetCommitTimestamp(startSha string, endSha string, filename string) (int, error) {
 	//  git log --pretty=format:%ct -1 $FILE
 	var command = git.NewCommand("log", startSha, endSha, "--pretty=format:%ct", "-1", "--", filename)
-	result, err := command.RunInDir(repo.Path)
+	result, err := command.RunInDir(repo.Path())
 	if err != nil {
 		return 0, fmt.Errorf("Could not get modified time for file \"%s\"", filename)
 	}
 
-	timeAsString := strings.TrimSpace(result)
+	timeAsString := strings.TrimSpace(string(result))
 	unixtime, err := strconv.Atoi(timeAsString)
 	if err != nil {
-		return 0, fmt.Errorf("Could not get intermpret timestamp \"%s\"", timeAsString)
+		return 0, fmt.Errorf("Could not get interpret timestamp \"%s\"", timeAsString)
 	}
 
 	return unixtime, nil
@@ -51,18 +51,18 @@ func (repo Repository) GetChangedFiles(startSha string, endSha string, filter st
 	var command = git.NewCommand("diff", startSha, endSha, "--name-only", "--no-renames")
 
 	if filter != "" {
-		command.AddArguments(fmt.Sprintf("--diff-filter=%s", filter))
+		command.AddArgs(fmt.Sprintf("--diff-filter=%s", filter))
 	}
 
 	if path != nil {
-		command.AddArguments("--")
+		command.AddArgs("--")
 
 		for _, value := range path {
-			command.AddArguments(value)
+			command.AddArgs(value)
 		}
 	}
 
-	var result, err = command.RunInDir(repo.Path)
+	var result, err = command.RunInDir(repo.Path())
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed executing command \"%s\": %s", command, err)
@@ -70,7 +70,7 @@ func (repo Repository) GetChangedFiles(startSha string, endSha string, filter st
 
 	var validFiles []string
 
-	for _, filename := range strings.Split(result, "\n") {
+	for _, filename := range strings.Split(string(result), "\n") {
 		if ext != nil {
 			fileExtension := filepath.Ext(filename)
 			for _, validExtension := range ext {

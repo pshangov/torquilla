@@ -2,10 +2,9 @@ package tq
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
-	"github.com/gogits/git-module"
+	"github.com/gogs/git-module"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
@@ -56,7 +55,7 @@ func init() {
 
 func run(args []string) error {
 	if viper.GetBool("version") {
-		fmt.Println("0.01")
+		fmt.Println("0.02")
 		return nil
 	}
 
@@ -75,12 +74,7 @@ func run(args []string) error {
 			return err
 		}
 
-		head, err := repo.GetHEADBranch()
-		if err != nil {
-			return err
-		}
-
-		endSha, err = repo.GetBranchCommitID(head.Name)
+		endSha, err = repo.RevParse("HEAD")
 		if err != nil {
 			return err
 		}
@@ -97,7 +91,7 @@ func run(args []string) error {
 		return errors.New("Too many arguments provided")
 	}
 
-	endCommit, err := repo.GetCommit(endSha)
+	endCommitTree, err := repo.LsTree(endSha)
 	if err != nil {
 		return fmt.Errorf("Failed fetching SHA %s from git", endSha)
 	}
@@ -107,7 +101,7 @@ func run(args []string) error {
 		return err
 	}
 
-	scripts, err := loadScripts(repo, endCommit.Tree, startSha, endSha, changedFilenames) // FIXME
+	scripts, err := loadScripts(repo, *endCommitTree, startSha, endSha, changedFilenames) // FIXME
 	if err != nil {
 		return err
 	}
@@ -194,18 +188,16 @@ func loadScripts(repo Repository, tree git.Tree, startSha string, endSha string,
 	}
 
 	for _, filename := range filenames {
-		blob, err := tree.GetBlobByPath(filename)
+		blob, err := tree.Blob(filename)
 		if err != nil {
 			return nil, err
 		}
 
-		data, err := blob.Data()
+		data, err := blob.Bytes()
 		if err != nil {
 			return nil, err
 		}
 
-		buffer := new(bytes.Buffer)
-		buffer.ReadFrom(data)
 		timestamp, err := repo.GetCommitTimestamp(startSha, endSha, filename)
 		if err != nil {
 			return nil, err
@@ -215,7 +207,7 @@ func loadScripts(repo Repository, tree git.Tree, startSha string, endSha string,
 			found := false
 			for pos, val := range manifestLines {
 				if val == filename {
-					scripts = append(scripts, Script{filename, timestamp, pos, buffer.String()})
+					scripts = append(scripts, Script{filename, timestamp, pos, string(data)})
 					found = true
 				}
 			}
@@ -223,7 +215,7 @@ func loadScripts(repo Repository, tree git.Tree, startSha string, endSha string,
 				fmt.Fprintf(os.Stderr, "Changed file not found in manifest: %s\n", filename)
 			}
 		} else {
-			scripts = append(scripts, Script{filename, timestamp, 0, buffer.String()})
+			scripts = append(scripts, Script{filename, timestamp, 0, string(data)})
 		}
 
 	}

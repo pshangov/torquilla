@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/pshangov/torquilla/tq"
+	"github.com/torquilla/tq"
 	"os"
 )
 
